@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login/Register</title>
+</head>
+<body>
+    <h1>{% if session.username %}Welcome, {{ session.username }}{% else %}Please Register or Login{% endif %}</h1>
+
+    {% if session.username %}
+        <form action="/logout" method="post">
+            <button type="submit">Logout</button>
+        </form>
+        <form action="/delete_account" method="post">
+            <button type="submit">Delete Account</button>
+        </form>
+    {% else %}
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form action="/" method="post">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <button type="submit" name="action" value="register">Register</button>
+            <button type="submit" name="action" value="login">Login</button>
+        </form>
+
+        {% if qr_code %}
+            <h2>Scan this QR Code to set up MFA:</h2>
+            <img src="{{ qr_code }}" alt="QR Code">
+        {% endif %}
+    {% endif %}
+</body>
+</html>
