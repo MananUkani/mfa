@@ -6,8 +6,10 @@
     <title>Dashboard</title>
 </head>
 <body>
-    <h1>Welcome to your Dashboard</h1>
-    <p>You are logged in as {{ session.username }}.</p>
-    <a href="{{ url_for('logout') }}">Logout</a>
+    <h1>Dashboard</h1>
+    <p>Welcome, {{ session.username }}!</p>
+    <form action="/logout" method="post">
+        <button type="submit">Logout</button>
+    </form>
 </body>
 </html>
