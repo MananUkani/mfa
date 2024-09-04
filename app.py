@@ -3,6 +3,7 @@ import sqlite3
 import pyotp
 import qrcode
 import io
+import base64
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -63,7 +64,8 @@ def index():
             row = cursor.fetchone()
             if row and check_password_hash(row[0], password):
                 session['username'] = username
-                return redirect(url_for('index'))
+                session['mfa_secret'] = row[1]  # Save MFA secret in session for verification
+                return redirect(url_for('mfa'))
             else:
                 flash('Invalid username or password.')
                 return redirect(url_for('index'))
@@ -72,21 +74,32 @@ def index():
 
     return render_template('landing.html')
 
+@app.route('/mfa', methods=['GET', 'POST'])
+def mfa():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        token = request.form['token']
+        otp = pyotp.TOTP(session.get('mfa_secret'))
+        if otp.verify(token):
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid MFA token.')
+            return redirect(url_for('mfa'))
+    
+    return render_template('mfa.html')
+
+@app.route('/dashboard')
+def dashboard():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    return render_template('dashboard.html')
+
 @app.route('/logout', methods=['POST'])
 def logout():
     session.pop('username', None)
-    return redirect(url_for('index'))
-
-@app.route('/delete_account', methods=['POST'])
-def delete_account():
-    if 'username' in session:
-        conn = sqlite3.connect('mfa.db')
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM users WHERE username = ?', (session['username'],))
-        conn.commit()
-        conn.close()
-        session.pop('username', None)
-        flash('Account deleted successfully.')
+    session.pop('mfa_secret', None)  # Remove MFA secret from session
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
