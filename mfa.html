@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFA Verification</title>
+</head>
+<body>
+    <h1>MFA Verification</h1>
+    <form action="/verify_mfa" method="post">
+        <label for="token">Enter MFA Token:</label>
+        <input type="text" id="token" name="token" required>
+        <button type="submit">Verify</button>
+    </form>
+    <a href="/">Back to Home</a>
+</body>
+</html>
