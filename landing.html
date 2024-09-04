@@ -8,14 +8,7 @@
 <body>
     <h1>{% if session.username %}Welcome, {{ session.username }}{% else %}Please Register or Login{% endif %}</h1>
 
-    {% if session.username %}
-        <form action="/logout" method="post">
-            <button type="submit">Logout</button>
-        </form>
-        <form action="/delete_account" method="post">
-            <button type="submit">Delete Account</button>
-        </form>
-    {% else %}
+    {% if not session.username %}
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 {% for message in messages %}
@@ -37,6 +30,8 @@
             <h2>Scan this QR Code to set up MFA:</h2>
             <img src="{{ qr_code }}" alt="QR Code">
         {% endif %}
+    {% else %}
+        <p>Welcome, {{ session.username }}! <a href="/dashboard">Go to Dashboard</a></p>
     {% endif %}
 </body>
 </html>
