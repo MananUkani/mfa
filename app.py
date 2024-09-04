@@ -1,24 +1,26 @@
-import pyodbc
+import sqlite3
 from flask import Flask, request, redirect, url_for, render_template, session
+from werkzeug.security import generate_password_hash, check_password_hash
+import pyotp
+import qrcode
+import os
 
 app = Flask(__name__)
 app.secret_key = '156abeefdbbaccc7896532486'
 
-def get_db_connection():
-    conn_str = (
-        r'DRIVER={ODBC Driver 17 for SQL Server};'
-        r'SERVER=<your-server>.database.windows.net;'
-        r'DATABASE=<your-database>;'
-        r'UID=<your-username>;'
-        r'PWD=<your-password>'
-    )
-    conn = pyodbc.connect(conn_str)
-    return conn
+def init_db():
+    if not os.path.exists('mfa.db'):
+        with sqlite3.connect('mfa.db') as conn:
+            conn.execute('''CREATE TABLE users
+                            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                             username TEXT UNIQUE NOT NULL,
+                             password TEXT NOT NULL,
+                             mfa_secret TEXT NOT NULL)''')
 
 @app.route('/')
 def index():
     if 'username' in session:
-        return redirect(url_for('protected'))
+        return redirect(url_for('login'))
     return redirect(url_for('register'))
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -27,7 +29,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         
-        conn = get_db_connection()
+        conn = sqlite3.connect('mfa.db')
         cur = conn.cursor()
         cur.execute('SELECT * FROM users WHERE username = ?', (username,))
         existing_user = cur.fetchone()
@@ -63,7 +65,7 @@ def login():
         password = request.form['password']
         token = request.form['token']
         
-        conn = get_db_connection()
+        conn = sqlite3.connect('mfa.db')
         cur = conn.cursor()
         cur.execute('SELECT * FROM users WHERE username = ?', (username,))
         user = cur.fetchone()
@@ -88,18 +90,13 @@ def protected():
     
     return 'Welcome to the protected page, {}!'.format(session['username'])
 
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
-    return redirect(url_for('login'))
-
 @app.route('/delete_account', methods=['POST'])
 def delete_account():
     if 'username' not in session:
         return redirect(url_for('login'))
 
     username = session['username']
-    conn = get_db_connection()
+    conn = sqlite3.connect('mfa.db')
     conn.execute('DELETE FROM users WHERE username = ?', (username,))
     conn.commit()
     conn.close()
@@ -107,4 +104,5 @@ def delete_account():
     return redirect(url_for('register'))
 
 if __name__ == '__main__':
+    init_db()
     app.run(debug=True)
